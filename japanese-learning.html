@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Japanese Learning - Chukaman Conversation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        /* Sticky Navigation */
+        .nav-header {
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .nav-header h1 {
+            text-align: center;
+            color: #667eea;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 0.5rem 1rem;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .nav-tab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Score Display */
+        .score-display {
+            text-align: center;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .score-display strong {
+            color: #667eea;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .section {
+            display: none;
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Tokenized Transcript Styles */
+        .transcript {
+            line-height: 3;
+            font-size: 1rem;
+        }
+
+        .sentence {
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .token {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            padding: 0.25rem;
+        }
+
+        .kanji {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .furigana {
+            font-size: 0.7rem;
+            color: #7f8c8d;
+            margin-bottom: 0.2rem;
+        }
+
+        .romaji {
+            font-size: 0.8rem;
+            color: #95a5a6;
+            font-style: italic;
+        }
+
+        /* Particle Highlighting */
+        .particle {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            border-radius: 8px;
+            padding: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .particle .kanji {
+            color: white;
+        }
+
+        .particle .furigana,
+        .particle .romaji {
+            color: #ecf0f1;
+        }
+
+        /* Flashcard Styles */
+        .flashcard-container {
+            perspective: 1000px;
+            margin-bottom: 2rem;
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-front,
+        .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .flashcard-front {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .flashcard-back {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-word {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .flashcard-reading {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .flashcard-meaning {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .flashcard-example {
+            font-size: 1rem;
+            text-align: center;
+            opacity: 0.9;
+        }
+
+        .flashcard-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Quiz Styles */
+        .quiz-question {
+            margin-bottom: 2rem;
+        }
+
+        .quiz-question h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .quiz-option {
+            padding: 1rem;
+            background: #f8f9fa;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quiz-option:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+
+        .quiz-option.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .quiz-option.correct {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+
+        .quiz-option.incorrect {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+
+        .quiz-feedback {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .quiz-feedback.correct {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .quiz-feedback.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .quiz-score {
+            text-align: center;
+            font-size: 2rem;
+            color: #667eea;
+            margin: 2rem 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .container {
+                padding: 0 0.5rem;
+            }
+
+            .section {
+                padding: 1.5rem;
+            }
+
+            .kanji {
+                font-size: 1.5rem;
+            }
+
+            .flashcard-word {
+                font-size: 2.5rem;
+            }
+
+            .nav-header h1 {
+                font-size: 1.2rem;
+            }
+        }
+
+        .hint {
+            text-align: center;
+            color: #95a5a6;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            font-style: italic;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Header -->
+    <nav class="nav-header">
+        <h1>🇯🇵 Japanese Learning - Chukaman</h1>
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showSection('transcript')">📖 Transcript</button>
+            <button class="nav-tab" onclick="showSection('flashcards')">🎴 Flashcards</button>
+            <button class="nav-tab" onclick="showSection('quiz')">📝 Quiz</button>
+        </div>
+        <div class="score-display" id="scoreDisplay">
+            <span id="authStatus">🔒 Connecting to Firebase...</span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Transcript Section -->
+        <section id="transcript" class="section active">
+            <h2 style="color: #667eea; margin-bottom: 1.5rem;">Tokenized Transcript</h2>
+            <p style="margin-bottom: 1rem; color: #7f8c8d;">
+                Interactive breakdown with Kanji, Furigana (reading), and Romaji (romanization).
+                Particles are highlighted in dark mode for grammatical clarity.
+            </p>
+            <div class="transcript" id="transcriptContent"></div>
+        </section>
+
+        <!-- Flashcards Section -->
+        <section id="flashcards" class="section">
+            <h2 style="color: #667eea; margin-bottom: 1.5rem;">Vocabulary Flashcards</h2>
+            <div class="flashcard-container">
+                <div class="flashcard" id="flashcard" onclick="flipCard()">
+                    <div class="flashcard-front">
+                        <div class="flashcard-word" id="cardWord"></div>
+                        <div class="flashcard-reading" id="cardReading"></div>
+                        <div class="hint">Click to flip</div>
+                    </div>
+                    <div class="flashcard-back">
+                        <div class="flashcard-meaning" id="cardMeaning"></div>
+                        <div class="flashcard-example" id="cardExample"></div>
+                        <div class="hint">Click to flip back</div>
+                    </div>
+                </div>
+            </div>
+            <div class="flashcard-controls">
+                <button class="btn btn-secondary" onclick="previousCard()">← Previous</button>
+                <button class="btn btn-primary" onclick="nextCard()">Next →</button>
+            </div>
+            <p style="text-align: center; margin-top: 1rem; color: #7f8c8d;">
+                Card <span id="cardNumber">1</span> of <span id="totalCards">0</span>
+            </p>
+        </section>
+
+        <!-- Quiz Section -->
+        <section id="quiz" class="section">
+            <h2 style="color: #667eea; margin-bottom: 1.5rem;">Comprehension Quiz</h2>
+            <div id="quizContent"></div>
+        </section>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Firebase Configuration (Replace with your own Firebase config)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase (only if config is provided)
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+
+        try {
+            if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+                firebase.initializeApp(firebaseConfig);
+                auth = firebase.auth();
+                db = firebase.firestore();
+
+                // Sign in anonymously
+                auth.signInAnonymously().then((userCredential) => {
+                    currentUser = userCredential.user;
+                    updateAuthStatus();
+                    loadBestScore();
+                }).catch((error) => {
+                    console.log("Auth error:", error);
+                    document.getElementById('authStatus').textContent = '⚠️ Firebase not configured';
+                });
+            } else {
+                document.getElementById('authStatus').textContent = '⚠️ Firebase not configured (scores won\'t be saved)';
+            }
+        } catch (error) {
+            console.log("Firebase initialization error:", error);
+            document.getElementById('authStatus').textContent = '⚠️ Firebase not configured';
+        }
+
+        function updateAuthStatus() {
+            if (currentUser) {
+                document.getElementById('authStatus').innerHTML =
+                    `✅ Connected as Guest | Best Score: <strong id="bestScore">Loading...</strong>`;
+            }
+        }
+
+        async function loadBestScore() {
+            if (!db || !currentUser) return;
+
+            try {
+                const docRef = db.collection('userScores').doc(currentUser.uid);
+                const doc = await docRef.get();
+
+                if (doc.exists) {
+                    const bestScore = doc.data().bestScore || 0;
+                    document.getElementById('bestScore').textContent = bestScore + '%';
+                } else {
+                    document.getElementById('bestScore').textContent = '0%';
+                }
+            } catch (error) {
+                console.log("Error loading score:", error);
+                document.getElementById('bestScore').textContent = 'N/A';
+            }
+        }
+
+        async function saveBestScore(score) {
+            if (!db || !currentUser) return;
+
+            try {
+                const docRef = db.collection('userScores').doc(currentUser.uid);
+                const doc = await docRef.get();
+
+                let currentBest = 0;
+                if (doc.exists) {
+                    currentBest = doc.data().bestScore || 0;
+                }
+
+                if (score > currentBest) {
+                    await docRef.set({
+                        bestScore: score,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    document.getElementById('bestScore').textContent = score + '%';
+                }
+            } catch (error) {
+                console.log("Error saving score:", error);
+            }
+        }
+
+        // Japanese Transcript Data
+        const transcriptData = [
+            {
+                sentence: [
+                    { kanji: "中華まん", furigana: "ちゅうかまん", romaji: "chūkaman", type: "word" },
+                    { kanji: "は", furigana: "は", romaji: "wa", type: "particle" },
+                    { kanji: "日本", furigana: "にほん", romaji: "nihon", type: "word" },
+                    { kanji: "で", furigana: "で", romaji: "de", type: "particle" },
+                    { kanji: "人気", furigana: "にんき", romaji: "ninki", type: "word" },
+                    { kanji: "の", furigana: "の", romaji: "no", type: "particle" },
+                    { kanji: "軽食", furigana: "けいしょく", romaji: "keishoku", type: "word" },
+                    { kanji: "です", furigana: "です", romaji: "desu", type: "word" }
+                ]
+            },
+            {
+                sentence: [
+                    { kanji: "コンビニ", furigana: "コンビニ", romaji: "konbini", type: "word" },
+                    { kanji: "で", furigana: "で", romaji: "de", type: "particle" },
+                    { kanji: "よく", furigana: "よく", romaji: "yoku", type: "word" },
+                    { kanji: "売って", furigana: "うって", romaji: "utte", type: "word" },
+                    { kanji: "います", furigana: "います", romaji: "imasu", type: "word" }
+                ]
+            },
+            {
+                sentence: [
+                    { kanji: "肉まん", furigana: "にくまん", romaji: "nikuman", type: "word" },
+                    { kanji: "と", furigana: "と", romaji: "to", type: "particle" },
+                    { kanji: "あんまん", furigana: "あんまん", romaji: "anman", type: "word" },
+                    { kanji: "が", furigana: "が", romaji: "ga", type: "particle" },
+                    { kanji: "特に", furigana: "とくに", romaji: "tokuni", type: "word" },
+                    { kanji: "人気", furigana: "にんき", romaji: "ninki", type: "word" },
+                    { kanji: "です", furigana: "です", romaji: "desu", type: "word" }
+                ]
+            },
+            {
+                sentence: [
+                    { kanji: "冬", furigana: "ふゆ", romaji: "fuyu", type: "word" },
+                    { kanji: "に", furigana: "に", romaji: "ni", type: "particle" },
+                    { kanji: "温かい", furigana: "あたたかい", romaji: "atatakai", type: "word" },
+                    { kanji: "中華まん", furigana: "ちゅうかまん", romaji: "chūkaman", type: "word" },
+                    { kanji: "を", furigana: "を", romaji: "wo", type: "particle" },
+                    { kanji: "食べる", furigana: "たべる", romaji: "taberu", type: "word" },
+                    { kanji: "のは", furigana: "のは", romaji: "no wa", type: "particle" },
+                    { kanji: "最高", furigana: "さいこう", romaji: "saikō", type: "word" },
+                    { kanji: "です", furigana: "です", romaji: "desu", type: "word" }
+                ]
+            }
+        ];
+
+        // Flashcard Data
+        const flashcards = [
+            {
+                word: "中華まん",
+                reading: "ちゅうかまん (chūkaman)",
+                meaning: "Chinese-style steamed bun",
+                example: "コンビニで中華まんを買いました"
+            },
+            {
+                word: "肉まん",
+                reading: "にくまん (nikuman)",
+                meaning: "Meat-filled steamed bun",
+                example: "肉まんが一番好きです"
+            },
+            {
+                word: "あんまん",
+                reading: "あんまん (anman)",
+                meaning: "Sweet red bean bun",
+                example: "あんまんは甘くて美味しい"
+            },
+            {
+                word: "コンビニ",
+                reading: "こんびに (konbini)",
+                meaning: "Convenience store",
+                example: "コンビニで買い物をします"
+            },
+            {
+                word: "人気",
+                reading: "にんき (ninki)",
+                meaning: "Popular, popularity",
+                example: "このお店は人気があります"
+            },
+            {
+                word: "軽食",
+                reading: "けいしょく (keishoku)",
+                meaning: "Light meal, snack",
+                example: "軽食を食べました"
+            }
+        ];
+
+        // Quiz Data
+        const quizQuestions = [
+            {
+                question: "What does 中華まん (chūkaman) mean?",
+                options: [
+                    "Chinese-style steamed bun",
+                    "Rice ball",
+                    "Sandwich",
+                    "Noodle soup"
+                ],
+                correct: 0
+            },
+            {
+                question: "Where are chukaman commonly sold in Japan?",
+                options: [
+                    "Department stores",
+                    "Convenience stores (konbini)",
+                    "Movie theaters",
+                    "Train stations only"
+                ],
+                correct: 1
+            },
+            {
+                question: "Which particle is used to mark the direct object in Japanese?",
+                options: [
+                    "は (wa)",
+                    "が (ga)",
+                    "を (wo)",
+                    "に (ni)"
+                ],
+                correct: 2
+            },
+            {
+                question: "What are the two most popular types of chukaman mentioned?",
+                options: [
+                    "Meat and seafood",
+                    "Nikuman (meat) and Anman (sweet bean)",
+                    "Chicken and vegetable",
+                    "Cheese and corn"
+                ],
+                correct: 1
+            },
+            {
+                question: "When is eating warm chukaman described as 'the best' (最高)?",
+                options: [
+                    "In summer",
+                    "In spring",
+                    "In winter",
+                    "In autumn"
+                ],
+                correct: 2
+            }
+        ];
+
+        // App State
+        let currentCardIndex = 0;
+        let currentQuizAnswers = [];
+        let quizSubmitted = false;
+
+        // Navigation
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.getElementById(sectionId).classList.add('active');
+            event.target.classList.add('active');
+
+            if (sectionId === 'quiz' && !quizSubmitted) {
+                initQuiz();
+            }
+        }
+
+        // Render Transcript
+        function renderTranscript() {
+            const container = document.getElementById('transcriptContent');
+
+            transcriptData.forEach((line, lineIndex) => {
+                const sentenceDiv = document.createElement('div');
+                sentenceDiv.className = 'sentence';
+
+                line.sentence.forEach(token => {
+                    const tokenDiv = document.createElement('div');
+                    tokenDiv.className = `token ${token.type === 'particle' ? 'particle' : ''}`;
+
+                    tokenDiv.innerHTML = `
+                        <div class="furigana">${token.furigana}</div>
+                        <div class="kanji">${token.kanji}</div>
+                        <div class="romaji">${token.romaji}</div>
+                    `;
+
+                    sentenceDiv.appendChild(tokenDiv);
+                });
+
+                container.appendChild(sentenceDiv);
+            });
+        }
+
+        // Flashcard Functions
+        function updateCard() {
+            const card = flashcards[currentCardIndex];
+            document.getElementById('cardWord').textContent = card.word;
+            document.getElementById('cardReading').textContent = card.reading;
+            document.getElementById('cardMeaning').textContent = card.meaning;
+            document.getElementById('cardExample').textContent = card.example;
+            document.getElementById('cardNumber').textContent = currentCardIndex + 1;
+            document.getElementById('totalCards').textContent = flashcards.length;
+
+            // Reset flip state
+            document.getElementById('flashcard').classList.remove('flipped');
+        }
+
+        function flipCard() {
+            document.getElementById('flashcard').classList.toggle('flipped');
+        }
+
+        function nextCard() {
+            currentCardIndex = (currentCardIndex + 1) % flashcards.length;
+            updateCard();
+        }
+
+        function previousCard() {
+            currentCardIndex = (currentCardIndex - 1 + flashcards.length) % flashcards.length;
+            updateCard();
+        }
+
+        // Quiz Functions
+        function initQuiz() {
+            if (quizSubmitted) return;
+
+            currentQuizAnswers = new Array(quizQuestions.length).fill(null);
+            const container = document.getElementById('quizContent');
+            container.innerHTML = '';
+
+            quizQuestions.forEach((q, qIndex) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'quiz-question';
+
+                let optionsHtml = '';
+                q.options.forEach((option, oIndex) => {
+                    optionsHtml += `
+                        <div class="quiz-option" onclick="selectAnswer(${qIndex}, ${oIndex})">
+                            ${option}
+                        </div>
+                    `;
+                });
+
+                questionDiv.innerHTML = `
+                    <h3>Question ${qIndex + 1}</h3>
+                    <p style="margin-bottom: 1rem; font-size: 1.1rem;">${q.question}</p>
+                    <div class="quiz-options" id="options-${qIndex}">
+                        ${optionsHtml}
+                    </div>
+                    <div class="quiz-feedback" id="feedback-${qIndex}" style="display: none;"></div>
+                `;
+
+                container.appendChild(questionDiv);
+            });
+
+            const submitBtn = document.createElement('button');
+            submitBtn.className = 'btn btn-primary';
+            submitBtn.style.width = '100%';
+            submitBtn.style.marginTop = '2rem';
+            submitBtn.textContent = 'Submit Quiz';
+            submitBtn.onclick = submitQuiz;
+            container.appendChild(submitBtn);
+        }
+
+        function selectAnswer(questionIndex, optionIndex) {
+            if (quizSubmitted) return;
+
+            currentQuizAnswers[questionIndex] = optionIndex;
+
+            const optionsContainer = document.getElementById(`options-${questionIndex}`);
+            const options = optionsContainer.querySelectorAll('.quiz-option');
+
+            options.forEach((opt, idx) => {
+                opt.classList.remove('selected');
+                if (idx === optionIndex) {
+                    opt.classList.add('selected');
+                }
+            });
+        }
+
+        function submitQuiz() {
+            if (currentQuizAnswers.includes(null)) {
+                alert('Please answer all questions before submitting!');
+                return;
+            }
+
+            quizSubmitted = true;
+            let correctCount = 0;
+
+            quizQuestions.forEach((q, qIndex) => {
+                const optionsContainer = document.getElementById(`options-${qIndex}`);
+                const options = optionsContainer.querySelectorAll('.quiz-option');
+                const feedback = document.getElementById(`feedback-${qIndex}`);
+
+                const userAnswer = currentQuizAnswers[qIndex];
+                const isCorrect = userAnswer === q.correct;
+
+                if (isCorrect) correctCount++;
+
+                options.forEach((opt, oIndex) => {
+                    opt.classList.remove('selected');
+                    if (oIndex === q.correct) {
+                        opt.classList.add('correct');
+                    } else if (oIndex === userAnswer) {
+                        opt.classList.add('incorrect');
+                    }
+                    opt.style.pointerEvents = 'none';
+                });
+
+                feedback.style.display = 'block';
+                feedback.className = `quiz-feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+                feedback.textContent = isCorrect ? '✅ Correct!' : `❌ Incorrect. The correct answer is: ${q.options[q.correct]}`;
+            });
+
+            const score = Math.round((correctCount / quizQuestions.length) * 100);
+
+            const scoreDiv = document.createElement('div');
+            scoreDiv.className = 'quiz-score';
+            scoreDiv.innerHTML = `
+                Your Score: ${correctCount}/${quizQuestions.length} (${score}%)
+                <br>
+                <button class="btn btn-primary" onclick="retakeQuiz()" style="margin-top: 1rem; font-size: 1rem;">
+                    Retake Quiz
+                </button>
+            `;
+
+            const container = document.getElementById('quizContent');
+            container.querySelector('button').remove();
+            container.appendChild(scoreDiv);
+
+            // Save to Firebase
+            saveBestScore(score);
+        }
+
+        function retakeQuiz() {
+            quizSubmitted = false;
+            currentQuizAnswers = [];
+            initQuiz();
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTranscript();
+            updateCard();
+        });
+    </script>
+</body>
+</html>
