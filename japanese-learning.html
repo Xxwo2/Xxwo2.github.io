@@ -367,6 +367,116 @@
             padding: 2rem;
             color: #667eea;
         }
+
+        /* YouTube URL Input Styles */
+        .url-input-container {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px dashed #667eea;
+        }
+
+        .url-input-container h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .url-input-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .url-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.8rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .load-btn {
+            padding: 0.8rem 1.5rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .load-btn:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .load-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status-message {
+            margin-top: 1rem;
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            display: block;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .transcript-toggle {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .toggle-btn {
+            padding: 0.5rem 1rem;
+            background: #e9ecef;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
     </style>
 </head>
 <body>
@@ -391,6 +501,28 @@
                 Interactive breakdown with Kanji, Furigana (reading), and Romaji (romanization).
                 Particles are highlighted in dark mode for grammatical clarity.
             </p>
+
+            <!-- YouTube URL Input -->
+            <div class="url-input-container">
+                <h3>🎥 Load Transcript from YouTube</h3>
+                <div class="url-input-group">
+                    <input
+                        type="text"
+                        id="youtubeUrl"
+                        class="url-input"
+                        placeholder="Paste YouTube URL here (e.g., https://youtu.be/...)">
+                    <button class="load-btn" onclick="loadYouTubeTranscript()">
+                        Load Transcript
+                    </button>
+                </div>
+                <div class="transcript-toggle">
+                    <span style="color: #7f8c8d; margin-right: 0.5rem;">Transcript view:</span>
+                    <button class="toggle-btn active" onclick="setTranscriptView('sample')">Sample</button>
+                    <button class="toggle-btn" onclick="setTranscriptView('loaded')">Loaded from YouTube</button>
+                </div>
+                <div id="statusMessage" class="status-message"></div>
+            </div>
+
             <div class="transcript" id="transcriptContent"></div>
         </section>
 
@@ -663,6 +795,262 @@
                 correct: 2
             }
         ];
+
+        // YouTube Transcript Loading
+        let loadedTranscriptData = [];
+        let currentTranscriptView = 'sample'; // 'sample' or 'loaded'
+
+        function extractVideoId(url) {
+            const patterns = [
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
+                /youtube\.com\/embed\/([^&\n?#]+)/,
+                /youtube\.com\/v\/([^&\n?#]+)/
+            ];
+
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match && match[1]) {
+                    return match[1];
+                }
+            }
+            return null;
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message ${type}`;
+        }
+
+        async function loadYouTubeTranscript() {
+            const urlInput = document.getElementById('youtubeUrl');
+            const url = urlInput.value.trim();
+            const loadBtn = event.target;
+
+            if (!url) {
+                showStatus('Please enter a YouTube URL', 'error');
+                return;
+            }
+
+            const videoId = extractVideoId(url);
+            if (!videoId) {
+                showStatus('Invalid YouTube URL. Please check and try again.', 'error');
+                return;
+            }
+
+            loadBtn.disabled = true;
+            loadBtn.textContent = 'Loading...';
+            showStatus('Fetching transcript from YouTube...', 'info');
+
+            try {
+                // Try multiple API endpoints
+                const apis = [
+                    `https://youtube-transcript3.p.rapidapi.com/api/transcript?videoId=${videoId}&lang=ja`,
+                    `https://cors-anywhere.herokuapp.com/https://www.youtube.com/api/timedtext?lang=ja&v=${videoId}`,
+                    `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.youtube.com/api/timedtext?lang=ja&v=${videoId}`)}`
+                ];
+
+                // Note: For production, you would need to:
+                // 1. Set up a serverless function (Firebase, Vercel, Netlify)
+                // 2. Use the youtube-transcript npm package on the backend
+                // 3. Call your own API endpoint here
+
+                // For now, show instructions to user
+                showStatus(
+                    'Note: Direct browser access to YouTube transcripts requires a backend API. ' +
+                    'Please paste the Japanese transcript manually below, or set up a Firebase Function. ' +
+                    'Tutorial: Check the console for setup instructions.',
+                    'error'
+                );
+
+                console.log(`
+===========================================
+HOW TO SET UP TRANSCRIPT LOADING
+===========================================
+
+Option 1: Use Firebase Cloud Functions (Recommended)
+-----------------------------------------------------
+1. Install Firebase CLI: npm install -g firebase-tools
+2. Initialize functions: firebase init functions
+3. Install package: cd functions && npm install youtube-transcript
+4. Create function in functions/index.js:
+
+const functions = require('firebase-functions');
+const {YoutubeTranscript} = require('youtube-transcript');
+
+exports.getTranscript = functions.https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    const videoId = req.query.videoId;
+    try {
+        const transcript = await YoutubeTranscript.fetchTranscript(videoId, {lang: 'ja'});
+        res.json({success: true, transcript});
+    } catch (error) {
+        res.json({success: false, error: error.message});
+    }
+});
+
+5. Deploy: firebase deploy --only functions
+6. Update this code to call your function URL
+
+Option 2: Manual Paste (Current Workaround)
+-----------------------------------------------------
+1. Visit: https://www.youtube.com/watch?v=${videoId}
+2. Click "..." menu → "Show transcript"
+3. Copy the Japanese text
+4. Create a simple tokenizer or use the parseJapaneseText() function below
+
+Video ID: ${videoId}
+===========================================
+                `);
+
+                // For demo purposes, allow manual input
+                const manualText = prompt(
+                    'Firebase Function not set up yet.\n\n' +
+                    'Would you like to paste the Japanese transcript manually?\n\n' +
+                    '(Visit the video, click "..." → "Show transcript", and copy the text)'
+                );
+
+                if (manualText && manualText.trim()) {
+                    parseAndDisplayTranscript(manualText);
+                    showStatus('Transcript loaded successfully! Switch to "Loaded from YouTube" view above.', 'success');
+                    setTranscriptView('loaded');
+                } else {
+                    showStatus('Transcript loading cancelled.', 'info');
+                }
+
+            } catch (error) {
+                console.error('Error loading transcript:', error);
+                showStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                loadBtn.disabled = false;
+                loadBtn.textContent = 'Load Transcript';
+            }
+        }
+
+        function parseAndDisplayTranscript(text) {
+            // Simple Japanese text parser
+            // For production, you'd want to use a library like kuromoji or TinySegmenter
+            const lines = text.split(/[。！？\n]+/).filter(s => s.trim());
+
+            loadedTranscriptData = [];
+
+            // Common Japanese particles
+            const particles = ['は', 'が', 'を', 'に', 'へ', 'と', 'から', 'まで', 'で', 'の', 'や', 'か', 'も', 'ね', 'よ', 'な'];
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+
+                // Simple word segmentation (for demo - in production use proper tokenizer)
+                const tokens = [];
+                let currentWord = '';
+
+                for (let i = 0; i < trimmed.length; i++) {
+                    const char = trimmed[i];
+                    const nextChar = trimmed[i + 1] || '';
+
+                    currentWord += char;
+
+                    // Check if current character(s) form a particle
+                    const isParticle = particles.includes(char) || particles.includes(char + nextChar);
+
+                    // Break on particle or sentence end
+                    if (isParticle || i === trimmed.length - 1 || this.isWordBreak(char, nextChar)) {
+                        if (currentWord.trim()) {
+                            tokens.push({
+                                kanji: currentWord,
+                                furigana: currentWord, // Simplified - needs real furigana library
+                                romaji: this.toRomaji(currentWord), // Simplified romanization
+                                type: particles.includes(currentWord) ? 'particle' : 'word'
+                            });
+                            currentWord = '';
+                        }
+                    }
+                }
+
+                if (tokens.length > 0) {
+                    loadedTranscriptData.push({ sentence: tokens });
+                }
+            });
+
+            console.log('Parsed transcript:', loadedTranscriptData);
+        }
+
+        function toRomaji(japanese) {
+            // Very simplified romaji conversion (for demo only)
+            // In production, use wanakana.js or similar
+            const kanaMap = {
+                'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o',
+                'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko',
+                'さ': 'sa', 'し': 'shi', 'す': 'su', 'せ': 'se', 'そ': 'so',
+                'た': 'ta', 'ち': 'chi', 'つ': 'tsu', 'て': 'te', 'と': 'to',
+                'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no',
+                'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho',
+                'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo',
+                'や': 'ya', 'ゆ': 'yu', 'よ': 'yo',
+                'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro',
+                'わ': 'wa', 'を': 'wo', 'ん': 'n',
+                'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go',
+                'ざ': 'za', 'じ': 'ji', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo',
+                'だ': 'da', 'ぢ': 'ji', 'づ': 'zu', 'で': 'de', 'ど': 'do',
+                'ば': 'ba', 'び': 'bi', 'ぶ': 'bu', 'べ': 'be', 'ぼ': 'bo',
+                'ぱ': 'pa', 'ぴ': 'pi', 'ぷ': 'pu', 'ぺ': 'pe', 'ぽ': 'po'
+            };
+
+            let romaji = '';
+            for (const char of japanese) {
+                romaji += kanaMap[char] || char;
+            }
+            return romaji || japanese;
+        }
+
+        function setTranscriptView(view) {
+            currentTranscriptView = view;
+
+            // Update toggle buttons
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Render appropriate transcript
+            const container = document.getElementById('transcriptContent');
+            container.innerHTML = '';
+
+            if (view === 'sample') {
+                renderTranscript();
+            } else if (view === 'loaded') {
+                if (loadedTranscriptData.length === 0) {
+                    container.innerHTML = '<p style="color: #7f8c8d; text-align: center; padding: 2rem;">No transcript loaded yet. Use the input above to load from YouTube.</p>';
+                } else {
+                    renderLoadedTranscript();
+                }
+            }
+        }
+
+        function renderLoadedTranscript() {
+            const container = document.getElementById('transcriptContent');
+
+            loadedTranscriptData.forEach((line, lineIndex) => {
+                const sentenceDiv = document.createElement('div');
+                sentenceDiv.className = 'sentence';
+
+                line.sentence.forEach(token => {
+                    const tokenDiv = document.createElement('div');
+                    tokenDiv.className = `token ${token.type === 'particle' ? 'particle' : ''}`;
+
+                    tokenDiv.innerHTML = `
+                        <div class="furigana">${token.furigana}</div>
+                        <div class="kanji">${token.kanji}</div>
+                        <div class="romaji">${token.romaji}</div>
+                    `;
+
+                    sentenceDiv.appendChild(tokenDiv);
+                });
+
+                container.appendChild(sentenceDiv);
+            });
+        }
 
         // App State
         let currentCardIndex = 0;
