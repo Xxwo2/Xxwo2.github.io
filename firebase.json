@@ -1,0 +1,29 @@
+{
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs18",
+    "predeploy": [
+      "npm --prefix \"$RESOURCE_DIR\" run lint"
+    ]
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "functions/**",
+      "ARCHITECTURE.md"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/getTranscript",
+        "function": "getTranscript"
+      },
+      {
+        "source": "/api/getTranscriptLanguages",
+        "function": "getTranscriptLanguages"
+      }
+    ]
+  }
+}
